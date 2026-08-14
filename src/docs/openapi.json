@@ -1,0 +1,222 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "TaskFlow Multi-Tenant Backend API",
+    "version": "1.0.0",
+    "description": "Production-grade multi-tenant project management API with authentication, RBAC, background queues, and task management."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register new user and organization",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "name", "orgName", "orgSlug"],
+                "properties": {
+                  "email": { "type": "string", "example": "admin@acme.com" },
+                  "password": { "type": "string", "example": "Password123!" },
+                  "name": { "type": "string", "example": "Alice Admin" },
+                  "orgName": { "type": "string", "example": "Acme Corporation" },
+                  "orgSlug": { "type": "string", "example": "acme-corp" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User and organization registered successfully" },
+          "400": { "description": "Validation error" },
+          "409": { "description": "Email or Org slug conflict" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login user to organization",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "orgSlug"],
+                "properties": {
+                  "email": { "type": "string", "example": "admin@acme.com" },
+                  "password": { "type": "string", "example": "Password123!" },
+                  "orgSlug": { "type": "string", "example": "acme-corp" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful, returns JWT access and refresh tokens" },
+          "401": { "description": "Invalid credentials or not an org member" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh JWT access token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token refreshed successfully" },
+          "401": { "description": "Invalid or revoked refresh token" }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "summary": "List organization projects",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated list of projects" }
+        }
+      },
+      "post": {
+        "summary": "Create project",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "example": "Acme Web Portal" },
+                  "description": { "type": "string", "example": "Main web portal redesign" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Project created successfully" }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "summary": "List and filter tasks",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] } },
+          { "name": "priority", "in": "query", "schema": { "type": "string", "enum": ["low", "medium", "high", "urgent"] } },
+          { "name": "assigneeId", "in": "query", "schema": { "type": "string" } },
+          { "name": "projectId", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated list of filtered tasks" }
+        }
+      },
+      "post": {
+        "summary": "Create task",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["projectId", "title"],
+                "properties": {
+                  "projectId": { "type": "string" },
+                  "title": { "type": "string", "example": "Design Database Schema" },
+                  "description": { "type": "string", "example": "Model schema and indexes" },
+                  "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"], "default": "todo" },
+                  "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"], "default": "medium" },
+                  "dueDate": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Task created successfully" }
+        }
+      }
+    },
+    "/tasks/{id}/assign": {
+      "post": {
+        "summary": "Assign user to task (triggers BullMQ email worker)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User assigned and job queued" },
+          "400": { "description": "User does not belong to same organization" }
+        }
+      }
+    },
+    "/jobs/{id}": {
+      "get": {
+        "summary": "Check BullMQ background job status",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Returns job status (pending, active, completed, failed)" },
+          "404": { "description": "Job not found" }
+        }
+      }
+    }
+  }
+}
