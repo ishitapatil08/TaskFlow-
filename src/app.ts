@@ -14,6 +14,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root redirect to Swagger UI
+app.get('/', (_req, res) => {
+  res.redirect('/api-docs');
+});
+
 // Swagger UI API Documentation endpoint
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
