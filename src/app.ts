@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.js';
-import openapiSpec from './docs/openapi.json' assert { type: 'json' };
+import openapiSpec from './docs/openapi.json';
 
 const app = express();
 
