@@ -34,8 +34,9 @@ export interface TaskAssignmentEmailPayload {
 }
 
 export const enqueueTaskAssignmentEmail = async (payload: TaskAssignmentEmailPayload) => {
-  // Deduplication key window (5 seconds)
-  const jobId = `assignment:${payload.taskId}:${payload.assigneeUserId}:${Math.floor(Date.now() / 5000)}`;
+  // Fix BullMQ custom jobId: replace colons with hyphens
+  const timestampWindow = Math.floor(Date.now() / 5000);
+  const jobId = `assignment-${payload.taskId}-${payload.assigneeUserId}-${timestampWindow}`;
 
   return emailQueue.add('send-task-assignment-email', payload, {
     jobId,
