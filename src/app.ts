@@ -8,9 +8,23 @@ import openapiSpec from './docs/openapi.json';
 
 const app = express();
 
-// Security and utility middleware
-app.use(helmet());
-app.use(cors());
+// Security middleware — allow Swagger UI to load inline scripts/styles
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+// CORS — allow all origins so Swagger UI and external clients can call the API
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
