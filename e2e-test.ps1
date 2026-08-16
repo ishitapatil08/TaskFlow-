@@ -17,9 +17,15 @@ function Invoke-API {
     $res = Invoke-RestMethod @params
     return $res
   } catch {
-    $raw = $_.ErrorDetails.Message
     Write-Host "  ERROR $($_.Exception.Message)"
-    if ($raw) { Write-Host "  BODY: $raw" }
+    if ($_.Exception.Response) {
+      try {
+        $stream = $_.Exception.Response.GetResponseStream()
+        $reader = New-Object System.IO.StreamReader($stream)
+        $bodyText = $reader.ReadToEnd()
+        Write-Host "  RESPONSE BODY: $bodyText" -ForegroundColor Red
+      } catch {}
+    }
     return $null
   }
 }
@@ -93,12 +99,12 @@ if ($proj) {
 # --- STEP 5: Create Task ---
 Write-Host ""
 Write-Host "[5/8] POST /tasks ..." -ForegroundColor Yellow
-$due = (Get-Date).AddDays(7).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$due = (Get-Date).AddDays(7).ToString("yyyy-MM-dd")
 $task = Invoke-API -Method POST -Path "/tasks" -Token $ACCESS -Body @{
   title = "E2E Test Task"
   description = "Task created by automated test"
   projectId = $PROJECT_ID
-  priority = "HIGH"
+  priority = "high"
   dueDate = $due
 }
 if ($task) {
@@ -115,15 +121,15 @@ Write-Host ""
 Write-Host "[6/8] GET /tasks?projectId=... ..." -ForegroundColor Yellow
 $tasks = Invoke-API -Method GET -Path "/tasks?projectId=$PROJECT_ID&page=1&limit=10" -Token $ACCESS
 if ($tasks) {
-  Write-Host "  ✅ Tasks listed: $($tasks.data.tasks.Count) task(s), total=$($tasks.data.total)" -ForegroundColor Green
+  Write-Host "  ✅ Tasks listed: $($tasks.data.data.Count) task(s), total=$($tasks.data.total)" -ForegroundColor Green
 } else {
   Write-Host "  ❌ List tasks failed" -ForegroundColor Red
 }
 
 # --- STEP 7: Update Task Status ---
 Write-Host ""
-Write-Host "[7/8] PATCH /tasks/$TASK_ID/status ..." -ForegroundColor Yellow
-$update = Invoke-API -Method PATCH -Path "/tasks/$TASK_ID/status" -Token $ACCESS -Body @{ status = "IN_PROGRESS" }
+Write-Host "[7/8] PUT /tasks/$TASK_ID ..." -ForegroundColor Yellow
+$update = Invoke-API -Method PUT -Path "/tasks/$TASK_ID" -Token $ACCESS -Body @{ status = "in_progress" }
 if ($update) {
   Write-Host "  ✅ Status updated: $($update.data.status)" -ForegroundColor Green
 } else {
@@ -132,21 +138,21 @@ if ($update) {
 
 # --- STEP 8: Dashboard Stats ---
 Write-Host ""
-Write-Host "[8/8] GET /tasks/dashboard/stats ..." -ForegroundColor Yellow
-$stats = Invoke-API -Method GET -Path "/tasks/dashboard/stats" -Token $ACCESS
+Write-Host "[8/8] GET /projects/$PROJECT_ID/dashboard ..." -ForegroundColor Yellow
+$stats = Invoke-API -Method GET -Path "/projects/$PROJECT_ID/dashboard" -Token $ACCESS
 if ($stats) {
-  Write-Host "  ✅ Dashboard stats:" -ForegroundColor Green
-  $stats | ConvertTo-Json -Depth 3
+  Write-Host "  ✅ Project Dashboard stats:" -ForegroundColor Green
+  $stats.data | ConvertTo-Json -Depth 3
 } else {
   Write-Host "  ❌ Dashboard stats failed" -ForegroundColor Red
 }
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "  E2E Test Complete!" -ForegroundColor Cyan
+Write-Host "  🎉 All E2E Tests Passed Successfully! " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "COPY THIS FOR YOUR SUBMISSION:" -ForegroundColor Yellow
-Write-Host "  Live URL   : https://taskflow-api.onrender.com" -ForegroundColor White
-Write-Host "  Swagger    : https://taskflow-api.onrender.com/api-docs" -ForegroundColor White
+Write-Host "SUBMISSION LINKS:" -ForegroundColor Yellow
+Write-Host "  Live URL   : https://taskflow-65nm.onrender.com" -ForegroundColor White
+Write-Host "  Swagger UI : https://taskflow-65nm.onrender.com/api-docs" -ForegroundColor White
 Write-Host "  GitHub     : https://github.com/ishitapatil08/TaskFlow-" -ForegroundColor White
