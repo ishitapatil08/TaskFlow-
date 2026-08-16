@@ -30,10 +30,21 @@
     }
   ],
   "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "security": [],
+        "tags": ["Health"],
+        "responses": {
+          "200": { "description": "Server is running" }
+        }
+      }
+    },
     "/auth/register": {
       "post": {
         "summary": "Register new user and organization",
         "security": [],
+        "tags": ["Auth"],
         "requestBody": {
           "required": true,
           "content": {
@@ -42,11 +53,11 @@
                 "type": "object",
                 "required": ["email", "password", "name", "orgName", "orgSlug"],
                 "properties": {
-                  "email": { "type": "string", "example": "admin@acme.com" },
-                  "password": { "type": "string", "example": "Password123!" },
-                  "name": { "type": "string", "example": "Alice Admin" },
-                  "orgName": { "type": "string", "example": "Acme Corporation" },
-                  "orgSlug": { "type": "string", "example": "acme-corp" }
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "name": { "type": "string" },
+                  "orgName": { "type": "string" },
+                  "orgSlug": { "type": "string" }
                 }
               }
             }
@@ -55,7 +66,7 @@
         "responses": {
           "201": { "description": "User and organization registered successfully" },
           "400": { "description": "Validation error" },
-          "409": { "description": "Email or Org slug conflict" }
+          "409": { "description": "Email or org slug already exists" }
         }
       }
     },
@@ -63,6 +74,7 @@
       "post": {
         "summary": "Login user to organization",
         "security": [],
+        "tags": ["Auth"],
         "requestBody": {
           "required": true,
           "content": {
@@ -71,16 +83,16 @@
                 "type": "object",
                 "required": ["email", "password", "orgSlug"],
                 "properties": {
-                  "email": { "type": "string", "example": "admin@acme.com" },
-                  "password": { "type": "string", "example": "Password123!" },
-                  "orgSlug": { "type": "string", "example": "acme-corp" }
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" },
+                  "orgSlug": { "type": "string" }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Login successful, returns JWT access and refresh tokens" },
+          "200": { "description": "Login successful - returns JWT access and refresh tokens" },
           "401": { "description": "Invalid credentials or not an org member" }
         }
       }
@@ -89,6 +101,7 @@
       "post": {
         "summary": "Refresh JWT access token",
         "security": [],
+        "tags": ["Auth"],
         "requestBody": {
           "required": true,
           "content": {
@@ -104,7 +117,7 @@
           }
         },
         "responses": {
-          "200": { "description": "Token refreshed successfully" },
+          "200": { "description": "Token refreshed successfully - returns new token pair" },
           "401": { "description": "Invalid or revoked refresh token" }
         }
       }
@@ -112,16 +125,19 @@
     "/projects": {
       "get": {
         "summary": "List organization projects",
+        "tags": ["Projects"],
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
         ],
         "responses": {
-          "200": { "description": "Paginated list of projects" }
+          "200": { "description": "Paginated list of projects" },
+          "401": { "description": "Unauthorized" }
         }
       },
       "post": {
         "summary": "Create project",
+        "tags": ["Projects"],
         "requestBody": {
           "required": true,
           "content": {
@@ -130,36 +146,54 @@
                 "type": "object",
                 "required": ["name"],
                 "properties": {
-                  "name": { "type": "string", "example": "Acme Web Portal" },
-                  "description": { "type": "string", "example": "Main web portal redesign" }
+                  "name": { "type": "string" },
+                  "description": { "type": "string" }
                 }
               }
             }
           }
         },
         "responses": {
-          "201": { "description": "Project created successfully" }
+          "201": { "description": "Project created successfully" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/projects/{id}/dashboard": {
+      "get": {
+        "summary": "Get project dashboard analytics",
+        "tags": ["Projects"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Project UUID" }
+        ],
+        "responses": {
+          "200": { "description": "Project stats - total tasks, overdue, status breakdown" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Project not found" }
         }
       }
     },
     "/tasks": {
       "get": {
         "summary": "List and filter tasks",
+        "tags": ["Tasks"],
         "parameters": [
+          { "name": "projectId", "in": "query", "schema": { "type": "string" }, "description": "Filter by project UUID" },
           { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] } },
           { "name": "priority", "in": "query", "schema": { "type": "string", "enum": ["low", "medium", "high", "urgent"] } },
           { "name": "assigneeId", "in": "query", "schema": { "type": "string" } },
-          { "name": "projectId", "in": "query", "schema": { "type": "string" } },
           { "name": "search", "in": "query", "schema": { "type": "string" } },
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
         ],
         "responses": {
-          "200": { "description": "Paginated list of filtered tasks" }
+          "200": { "description": "Paginated list of filtered tasks" },
+          "401": { "description": "Unauthorized" }
         }
       },
       "post": {
         "summary": "Create task",
+        "tags": ["Tasks"],
         "requestBody": {
           "required": true,
           "content": {
@@ -168,27 +202,86 @@
                 "type": "object",
                 "required": ["projectId", "title"],
                 "properties": {
-                  "projectId": { "type": "string" },
-                  "title": { "type": "string", "example": "Design Database Schema" },
-                  "description": { "type": "string", "example": "Model schema and indexes" },
-                  "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"], "default": "todo" },
-                  "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"], "default": "medium" },
-                  "dueDate": { "type": "string", "format": "date-time" }
+                  "projectId": { "type": "string", "description": "Project UUID" },
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] },
+                  "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+                  "dueDate": { "type": "string", "format": "date", "description": "Format: YYYY-MM-DD" }
                 }
               }
             }
           }
         },
         "responses": {
-          "201": { "description": "Task created successfully" }
+          "201": { "description": "Task created successfully" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "get": {
+        "summary": "Get task by ID",
+        "tags": ["Tasks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Task UUID" }
+        ],
+        "responses": {
+          "200": { "description": "Task details" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Task not found" }
+        }
+      },
+      "put": {
+        "summary": "Update task",
+        "tags": ["Tasks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Task UUID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] },
+                  "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+                  "dueDate": { "type": "string", "format": "date", "description": "Format: YYYY-MM-DD" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Task updated successfully" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Task not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete task",
+        "tags": ["Tasks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Task UUID" }
+        ],
+        "responses": {
+          "200": { "description": "Task deleted successfully" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Task not found" }
         }
       }
     },
     "/tasks/{id}/assign": {
       "post": {
-        "summary": "Assign user to task (triggers BullMQ email worker)",
+        "summary": "Assign user to task (triggers BullMQ email notification)",
+        "tags": ["Tasks"],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Task UUID" }
         ],
         "requestBody": {
           "required": true,
@@ -198,26 +291,28 @@
                 "type": "object",
                 "required": ["userId"],
                 "properties": {
-                  "userId": { "type": "string" }
+                  "userId": { "type": "string", "description": "User UUID to assign" }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "User assigned and job queued" },
-          "400": { "description": "User does not belong to same organization" }
+          "200": { "description": "User assigned and email notification job queued in Redis" },
+          "400": { "description": "User not in same organization" },
+          "401": { "description": "Unauthorized" }
         }
       }
     },
     "/jobs/{id}": {
       "get": {
         "summary": "Check BullMQ background job status",
+        "tags": ["Jobs"],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Job ID from assign response" }
         ],
         "responses": {
-          "200": { "description": "Returns job status (pending, active, completed, failed)" },
+          "200": { "description": "Returns job state: waiting, active, completed, failed" },
           "404": { "description": "Job not found" }
         }
       }
