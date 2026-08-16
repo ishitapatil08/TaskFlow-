@@ -2,14 +2,12 @@ services:
   # Express REST API Server
   - type: web
     name: taskflow-api
-    env: node
+    env: docker
     region: singapore
     plan: free
-    buildCommand: npm install && npx prisma generate && npm run build && npx prisma migrate deploy
-    startCommand: npm start
     envVars:
       - key: PORT
-        value: 3000
+        value: 10000
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
