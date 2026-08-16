@@ -1,4 +1,4 @@
-{
+﻿{
   "openapi": "3.0.0",
   "info": {
     "title": "TaskFlow Multi-Tenant Backend API",
@@ -33,18 +33,18 @@
     "/health": {
       "get": {
         "summary": "Health check",
-        "security": [],
         "tags": ["Health"],
+        "security": [],
         "responses": {
-          "200": { "description": "Server is running" }
+          "200": { "description": "Server is healthy" }
         }
       }
     },
     "/auth/register": {
       "post": {
         "summary": "Register new user and organization",
-        "security": [],
         "tags": ["Auth"],
+        "security": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -53,12 +53,19 @@
                 "type": "object",
                 "required": ["email", "password", "name", "orgName", "orgSlug"],
                 "properties": {
-                  "email": { "type": "string", "format": "email" },
-                  "password": { "type": "string", "minLength": 8 },
-                  "name": { "type": "string" },
-                  "orgName": { "type": "string" },
-                  "orgSlug": { "type": "string" }
+                  "email": { "type": "string", "example": "ishita.demo@taskflow.com" },
+                  "password": { "type": "string", "example": "Password123!" },
+                  "name": { "type": "string", "example": "Ishita Patil" },
+                  "orgName": { "type": "string", "example": "Demo Innovations" },
+                  "orgSlug": { "type": "string", "example": "demo-innovations" }
                 }
+              },
+              "example": {
+                "email": "ishita.demo@taskflow.com",
+                "password": "Password123!",
+                "name": "Ishita Patil",
+                "orgName": "Demo Innovations",
+                "orgSlug": "demo-innovations"
               }
             }
           }
@@ -66,15 +73,15 @@
         "responses": {
           "201": { "description": "User and organization registered successfully" },
           "400": { "description": "Validation error" },
-          "409": { "description": "Email or org slug already exists" }
+          "409": { "description": "Email or orgSlug already exists" }
         }
       }
     },
     "/auth/login": {
       "post": {
         "summary": "Login user to organization",
-        "security": [],
         "tags": ["Auth"],
+        "security": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -83,10 +90,15 @@
                 "type": "object",
                 "required": ["email", "password", "orgSlug"],
                 "properties": {
-                  "email": { "type": "string", "format": "email" },
-                  "password": { "type": "string" },
-                  "orgSlug": { "type": "string" }
+                  "email": { "type": "string", "example": "ishita.demo@taskflow.com" },
+                  "password": { "type": "string", "example": "Password123!" },
+                  "orgSlug": { "type": "string", "example": "demo-innovations" }
                 }
+              },
+              "example": {
+                "email": "ishita.demo@taskflow.com",
+                "password": "Password123!",
+                "orgSlug": "demo-innovations"
               }
             }
           }
@@ -100,8 +112,8 @@
     "/auth/refresh": {
       "post": {
         "summary": "Refresh JWT access token",
-        "security": [],
         "tags": ["Auth"],
+        "security": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -110,14 +122,17 @@
                 "type": "object",
                 "required": ["refreshToken"],
                 "properties": {
-                  "refreshToken": { "type": "string" }
+                  "refreshToken": { "type": "string", "description": "Paste the refreshToken received from /auth/login response" }
                 }
+              },
+              "example": {
+                "refreshToken": "<paste your refreshToken from login response here>"
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Token refreshed successfully - returns new token pair" },
+          "200": { "description": "Token refreshed successfully - returns new access and refresh token pair" },
           "401": { "description": "Invalid or revoked refresh token" }
         }
       }
@@ -127,8 +142,8 @@
         "summary": "List organization projects",
         "tags": ["Projects"],
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer" } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+          { "name": "page", "in": "query", "schema": { "type": "integer", "example": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "example": 20 } }
         ],
         "responses": {
           "200": { "description": "Paginated list of projects" },
@@ -146,9 +161,13 @@
                 "type": "object",
                 "required": ["name"],
                 "properties": {
-                  "name": { "type": "string" },
-                  "description": { "type": "string" }
+                  "name": { "type": "string", "example": "Q3 Cloud Migration" },
+                  "description": { "type": "string", "example": "Migrate all microservices to containerized Kubernetes cluster" }
                 }
+              },
+              "example": {
+                "name": "Q3 Cloud Migration",
+                "description": "Migrate all microservices to containerized Kubernetes cluster"
               }
             }
           }
@@ -164,10 +183,17 @@
         "summary": "Get project dashboard analytics",
         "tags": ["Projects"],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Project UUID" }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Project UUID (copy from POST /projects response)",
+            "example": "paste-project-id-here"
+          }
         ],
         "responses": {
-          "200": { "description": "Project stats - total tasks, overdue, status breakdown" },
+          "200": { "description": "Project stats - total tasks, overdue count, status breakdown" },
           "401": { "description": "Unauthorized" },
           "404": { "description": "Project not found" }
         }
@@ -202,13 +228,20 @@
                 "type": "object",
                 "required": ["projectId", "title"],
                 "properties": {
-                  "projectId": { "type": "string", "description": "Project UUID" },
-                  "title": { "type": "string" },
-                  "description": { "type": "string" },
-                  "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] },
-                  "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
-                  "dueDate": { "type": "string", "format": "date", "description": "Format: YYYY-MM-DD" }
+                  "projectId": { "type": "string", "description": "Paste Project UUID from POST /projects response" },
+                  "title": { "type": "string", "example": "Setup Redis Cache Layer" },
+                  "description": { "type": "string", "example": "Configure BullMQ workers with exponential backoff retries" },
+                  "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"], "example": "todo" },
+                  "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"], "example": "high" },
+                  "dueDate": { "type": "string", "format": "date", "example": "2026-09-30", "description": "Format: YYYY-MM-DD" }
                 }
+              },
+              "example": {
+                "projectId": "<paste-project-id-here>",
+                "title": "Setup Redis Cache Layer",
+                "description": "Configure BullMQ workers with exponential backoff retries",
+                "priority": "high",
+                "dueDate": "2026-09-30"
               }
             }
           }
@@ -237,7 +270,7 @@
         "summary": "Update task",
         "tags": ["Tasks"],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Task UUID" }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Task UUID (copy from POST /tasks response)" }
         ],
         "requestBody": {
           "required": true,
@@ -248,10 +281,13 @@
                 "properties": {
                   "title": { "type": "string" },
                   "description": { "type": "string" },
-                  "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] },
+                  "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"], "example": "in_progress" },
                   "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
                   "dueDate": { "type": "string", "format": "date", "description": "Format: YYYY-MM-DD" }
                 }
+              },
+              "example": {
+                "status": "in_progress"
               }
             }
           }
@@ -264,13 +300,13 @@
         }
       },
       "delete": {
-        "summary": "Delete task",
+        "summary": "Delete task (soft delete)",
         "tags": ["Tasks"],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Task UUID" }
         ],
         "responses": {
-          "200": { "description": "Task deleted successfully" },
+          "200": { "description": "Task soft-deleted successfully" },
           "401": { "description": "Unauthorized" },
           "404": { "description": "Task not found" }
         }
@@ -278,7 +314,7 @@
     },
     "/tasks/{id}/assign": {
       "post": {
-        "summary": "Assign user to task (triggers BullMQ email notification)",
+        "summary": "Assign user to task (triggers BullMQ email notification job)",
         "tags": ["Tasks"],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Task UUID" }
@@ -291,14 +327,17 @@
                 "type": "object",
                 "required": ["userId"],
                 "properties": {
-                  "userId": { "type": "string", "description": "User UUID to assign" }
+                  "userId": { "type": "string", "description": "User UUID to assign (must be in same organization)" }
                 }
+              },
+              "example": {
+                "userId": "<paste-user-id-from-login-response>"
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "User assigned and email notification job queued in Redis" },
+          "200": { "description": "User assigned and email notification job queued in Redis via BullMQ" },
           "400": { "description": "User not in same organization" },
           "401": { "description": "Unauthorized" }
         }
@@ -309,7 +348,7 @@
         "summary": "Check BullMQ background job status",
         "tags": ["Jobs"],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Job ID from assign response" }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Job ID returned from /tasks/:id/assign" }
         ],
         "responses": {
           "200": { "description": "Returns job state: waiting, active, completed, failed" },
