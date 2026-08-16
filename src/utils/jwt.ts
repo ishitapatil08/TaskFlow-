@@ -11,13 +11,25 @@ export interface TokenPayload {
 }
 
 export const generateAccessToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
+  const cleanPayload: TokenPayload = {
+    userId: payload.userId,
+    orgId: payload.orgId,
+    email: payload.email,
+    role: payload.role,
+  };
+  return jwt.sign(cleanPayload, env.JWT_ACCESS_SECRET, {
     expiresIn: env.JWT_ACCESS_TTL as any,
   });
 };
 
 export const generateRefreshToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
+  const cleanPayload: TokenPayload = {
+    userId: payload.userId,
+    orgId: payload.orgId,
+    email: payload.email,
+    role: payload.role,
+  };
+  return jwt.sign(cleanPayload, env.JWT_REFRESH_SECRET, {
     expiresIn: env.JWT_REFRESH_TTL as any,
   });
 };
