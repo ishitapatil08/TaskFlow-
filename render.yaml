@@ -1,0 +1,72 @@
+services:
+  # Express REST API Server
+  - type: web
+    name: taskflow-api
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build && npx prisma migrate deploy
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: taskflow-postgres
+          property: connectionString
+      - key: REDIS_HOST
+        fromKeyValue:
+          name: taskflow-redis
+          property: host
+      - key: REDIS_PORT
+        value: 6379
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+  # BullMQ Email Background Worker
+  - type: worker
+    name: taskflow-worker
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start:worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: taskflow-postgres
+          property: connectionString
+      - key: REDIS_HOST
+        fromKeyValue:
+          name: taskflow-redis
+          property: host
+      - key: REDIS_PORT
+        value: 6379
+      - key: JWT_ACCESS_SECRET
+        fromService:
+          type: web
+          name: taskflow-api
+          envVarKey: JWT_ACCESS_SECRET
+      - key: JWT_REFRESH_SECRET
+        fromService:
+          type: web
+          name: taskflow-api
+          envVarKey: JWT_REFRESH_SECRET
+
+databases:
+  - name: taskflow-postgres
+    databaseName: taskflow_db
+    user: postgres
+    plan: free
+    region: singapore
+
+keyValues:
+  - name: taskflow-redis
+    plan: free
+    region: singapore
