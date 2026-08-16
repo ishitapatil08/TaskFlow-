@@ -24,7 +24,7 @@ TaskFlow is a production-grade, lightweight multi-tenant project management back
 
 ---
 
-## 🚀 Quick Start (Local Setup)
+## Quick Start (Local Setup)
 
 ### Prerequisites
 - Node.js (v20+)
@@ -69,7 +69,7 @@ npm run worker:dev
 
 ---
 
-## 🐳 Docker Compose Deployment (Production Readiness)
+## Docker Compose Deployment (Production Readiness)
 
 You can run the entire ecosystem (API, Worker, PostgreSQL, and Redis) with a single Docker Compose command:
 
@@ -96,7 +96,7 @@ Import `postman_collection.json` located in the root directory directly into Pos
 
 ---
 
-## 🧪 Running Automated Tests
+## Running Automated Tests
 
 Run the complete Vitest test suite:
 ```bash
@@ -110,14 +110,6 @@ npm run test:coverage
 
 ---
 
-## 📹 Screen Recording & Demo Guide
-
-When creating your video demo for submission, highlight these 5 key flows:
-1. **Database & Schema**: Show `prisma/schema.prisma` highlighting multi-tenant `org_id` indexes and soft delete fields.
-2. **Authentication & Multi-Tenancy**: Demonstrate `/api/auth/register` and `/api/auth/login`. Show how JWT token attaches `org_id` context.
-3. **REST API & Pagination**: Query `/api/tasks?status=in_progress` and `/api/projects` in Swagger UI or Postman showing standard paginated response.
-4. **Asynchronous Background Jobs**: Assign a task to a user (`POST /api/tasks/:id/assign`), show that the API responds instantly, and display the worker terminal printing `📧 [MOCK EMAIL SENT]`.
-5. **Cross-Tenant Access Test**: Demonstrate that attempting to access another organization's project returns `403 Forbidden` / `404 Not Found`.
 
 ---
 
